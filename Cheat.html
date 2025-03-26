@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我不是诈骗网站！！！</title>
+  <style>
+    * {
+      padding: 0;
+      margin: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background-color: #f5f5f5;
+    }
+
+    .header {
+      background-color: #FFA500;
+      color: white;
+      text-align: center;
+      padding: 20px;
+      font-size: 36px;
+    }
+
+    .main-content {
+      display: flex;
+      flex: 1;
+    }
+
+    .slogan {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      font-size: 24px;
+      background-color: #87CEEB;
+      padding: 20px;
+      font-weight: bold;
+    }
+
+    .form-container {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      background-color: #87CEEB;
+    }
+
+    form {
+      width: 100%;
+      max-width: 400px;
+      background-color: white;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
+
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <h1 id="title">我不是诈骗网站！！！</h1>
+  </div>
+  <div class="main-content">
+    <div class="slogan" id="left-slogan">
+      <p>不听不信不转账，谨防电信诈骗！</p>
+      <p>未知链接不点击，陌生来电不轻信！</p>
+    </div>
+    <div class="form-container">
+      <form id="infoForm">
+        <label for="name">姓名:</label>
+        <input type="text" id="name" required>
+        <label for="gender">性别:</label>
+        <input type="text" id="gender" list="genders" value="女" required>
+        <datalist id="genders">
+          <option value="男">
+          <option value="女">
+        </datalist>
+        <label for="birthday">生日:</label>
+        <input type="date" id="birthday" required>
+        <label for="region">所在地区:</label>
+        <input type="text" id="region" required>
+        <label for="phone">电话号码:</label>
+        <input type="tel" id="phone" required maxlength="11"> <!-- 限制电话号码为11位 -->
+        <label for="id-card">身份证号:</label>
+        <input type="text" id="id-card" required maxlength="18"> <!-- 限制身份证号为18位 -->
+        <label for="loan-amount">贷款金额:</label>
+        <input type="number" id="loan-amount" required>
+        <label for="bank-card">银行卡号:</label>
+        <input type="text" id="bank-card" required>
+        <button type="submit">提交</button>
+      </form>
+    </div>
+    <div class="slogan" id="right-slogan">
+      <p>个人信息要保密，安全意识放第一！</p>
+      <p>全民反诈齐参与，和谐社会共受益！</p>
+    </div>
+  </div>
+  <script>
+    const title = document.getElementById('title');
+    const leftSlogan = document.getElementById('left-slogan');
+    const rightSlogan = document.getElementById('right-slogan');
+    const colors = ['red', 'green', 'blue', 'yellow', 'purple'];
+    let colorIndex = 0;
+
+    setInterval(() => {
+      title.style.color = colors[colorIndex];
+      const childrenLeft = leftSlogan.getElementsByTagName('p');
+      for (let i = 0; i < childrenLeft.length; i++) {
+        childrenLeft[i].style.color = colors[colorIndex];
+      }
+      const childrenRight = rightSlogan.getElementsByTagName('p');
+      for (let i = 0; i < childrenRight.length; i++) {
+        childrenRight[i].style.color = colors[colorIndex];
+      }
+      colorIndex = (colorIndex + 1) % colors.length;
+    }, 200);
+
+    const form = document.getElementById('infoForm');
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const name = document.getElementById('name').value;
+      const gender = document.getElementById('gender').value;
+      const birthday = new Date(document.getElementById('birthday').value);
+      const phone = document.getElementById('phone').value;
+      const idCard = document.getElementById('id-card').value;
+      const loanAmount = parseFloat(document.getElementById('loan-amount').value);
+      const bankCard = document.getElementById('bank-card').value;
+
+      // 姓名验证
+      if (!/^[\u4e00-\u9fa5]+$/.test(name)) {
+        alert('姓名只能包含中文字符');
+        return;
+      }
+
+      // 性别验证
+      if (gender !== '男' && gender !== '女') {
+        alert('性别只能是男或女');
+        return;
+      }
+
+      // 生日验证
+      const today = new Date();
+      if (birthday > today) {
+        alert('生日不能是未来的日期');
+        return;
+      }
+
+      // 电话号码验证
+      if (!/^\d{11}$/.test(phone)) {
+        alert('电话号码必须是11位数字');
+        return;
+      }
+
+      // 身份证号验证
+      if (!/^\d{17}[\dXx]$/.test(idCard)) {
+        alert('身份证号必须是18位数字或17位数字加一个字母');
+        return;
+      }
+
+      // 贷款金额验证
+      if (isNaN(loanAmount) || loanAmount <= 0) {
+        alert('贷款金额必须是正数');
+        return;
+      }
+
+      // 银行卡号验证
+      if (!/^\d+$/.test(bankCard)) {
+        alert('银行卡号必须是数字');
+        return;
+      }
+
+      alert('提交成功，所需金额将在24小时内到账');
+      // 清空表单
+      form.reset();
+    });
+  </script>
+</body>
+
+</html>
