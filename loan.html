@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>网贷平台</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      color: #333;
+    }
+
+    .header {
+      height: 100px;
+      background-color: #ffffff;
+      color: black;
+      display: flex;
+      justify-content: start;
+      align-items: center;
+      font-size: 28px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 0 20px;
+    }
+
+    .header img {
+      height: 80px;
+      margin-right: 20px;
+    }
+
+    .header span {
+      font-family: 'Bodoni';
+      font-weight: normal;
+      color: black;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .content {
+      display: flex;
+      flex: 1;
+    }
+
+    .sidebar {
+      width: 200px;
+      background-color: #f8f9fa;
+      color: #333;
+      border-right: 1px solid #e9ecef;
+    }
+
+    .sidebar ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .sidebar li {
+      padding: 15px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .sidebar li:hover {
+      background-color: #e9ecef;
+    }
+
+    .main {
+      flex: 1;
+      padding: 20px;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    form {
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    form label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #555;
+    }
+
+    /* 单选按钮样式 */
+    .gender-radio {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    form input[type="radio"] {
+      display: none;
+    }
+
+    form input[type="radio"]+label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+    }
+
+    form input[type="radio"]+label::before {
+      content: "";
+      width: 20px;
+      height: 20px;
+      border: 1px solid #ccc;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    form input[type="radio"]:checked+label::before {
+      background-color: #28a745;
+      box-shadow: inset 0 0 0 3px white;
+    }
+
+    /* 性别图标样式 */
+    form input[type="radio"][value="男"]+label::after {
+      content: "♂";
+      font-size: 20px;
+      color: #28a745;
+      margin-left: 5px;
+    }
+
+    form input[type="radio"][value="女"]+label::after {
+      content: "♀";
+      font-size: 20px;
+      color: #28a745;
+      margin-left: 5px;
+    }
+
+    form input,
+    form select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+
+    form button {
+      padding: 12px 25px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background-color 0.2s;
+      display: block;
+      margin: 0 auto;
+    }
+
+    form button:hover {
+      background-color: #218838;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <img
+      src="https://ts1.tc.mm.bing.net/th/id/R-C.8d5f6b46cd50aa5cbc1fe228477ef196?rik=F8SJNkU9sdjYsg&riu=http%3a%2f%2fcollege.gaokao.com%2fstyle%2fcollege%2fimages%2ficon%2f515.png&ehk=q77Y%2fHKIEIoDtcajJuDnbZW2WU8v9wtPqgDnysTPkTE%3d&risl=&pid=ImgRaw&r=0"
+      alt="商标">
+    <span><strong>温州大学网贷平台</strong></span>
+  </div>
+  <div class="content">
+    <div class="sidebar">
+      <ul>
+        <li onclick="showPage('platform-intro')">平台简介</li>
+        <li onclick="showPage('contact-us')">联系我们</li>
+        <li onclick="showPage('loan-products')">贷款产品</li>
+        <li onclick="showPage('apply-loan')">立即贷款</li>
+      </ul>
+    </div>
+    <div class="main">
+      <div id="platform-intro" class="page active">
+        <h2>平台简介</h2>
+        <p>我们的网贷平台是一个专业、安全、高效的网络借贷服务平台。致力于为个人和中小企业提供便捷的融资渠道，通过先进的风控技术和严格的审核流程，确保借贷双方的利益得到保障。</p>
+      </div>
+      <div id="contact-us" class="page">
+        <h2>联系我们</h2>
+        <p>如果您有任何问题或建议，请随时联系我们：</p>
+        <ul>
+          <li>电话：86696110</li>
+          <li>邮箱：86696110@163.com</li>
+          <li>地址：温州大学北校区2号楼202</li>
+        </ul>
+      </div>
+      <div id="loan-products" class="page">
+        <h2>贷款产品</h2>
+        <p>我们提供多种贷款产品，包括个人信用贷款、中小企业经营贷款等。贷款额度灵活，还款期限多样，满足不同客户的需求。</p>
+      </div>
+      <div id="apply-loan" class="page">
+        <h2>立即贷款</h2>
+        <form id="loanForm">
+          <label for="name">姓名：</label>
+          <input type="text" id="name" required>
+          <label>性别：</label>
+          <div class="gender-radio">
+            <input type="radio" name="gender" id="male" value="男" required>
+            <label for="male">男</label>
+            <input type="radio" name="gender" id="female" value="女" required>
+            <label for="female">女</label>
+          </div>
+          <label for="birthday">生日：</label>
+          <input type="date" id="birthday" required>
+          <label for="region">所在地区：</label>
+          <input type="text" id="region" required>
+          <label for="phone">电话号码：</label>
+          <input type="text" id="phone" required>
+          <label for="idCard">身份证号：</label>
+          <input type="text" id="idCard" required>
+          <label for="loanAmount">贷款金额：</label>
+          <input type="number" id="loanAmount" required>
+          <label for="bankCard">银行卡号：</label>
+          <input type="text" id="bankCard" required>
+          <button type="button" onclick="submitLoanForm()">提交</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script>
+    function showPage(pageId) {
+      const pages = document.querySelectorAll('.page');
+      pages.forEach(page => {
+        page.classList.remove('active');
+      });
+      const selectedPage = document.getElementById(pageId);
+      selectedPage.classList.add('active');
+    }
+
+    function submitLoanForm() {
+      const name = document.getElementById('name').value;
+      const gender = document.querySelector('input[name="gender"]:checked')?.value;
+      const birthday = document.getElementById('birthday').value;
+      const region = document.getElementById('region').value;
+      const phone = document.getElementById('phone').value;
+      const idCard = document.getElementById('idCard').value;
+      const loanAmount = document.getElementById('loanAmount').value;
+      const bankCard = document.getElementById('bankCard').value;
+
+      const nameRegex = /^[\u4e00-\u9fa5]{2,4}$/;
+      const phoneRegex = /^1[3-9]\d{9}$/;
+      const idCardRegex = /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/;
+      const bankCardRegex = /^\d{16,19}$/;
+
+      if (!gender) {
+        alert('请选择性别');
+        return;
+      }
+
+      if (!nameRegex.test(name)) {
+        alert('姓名需为 2 - 4 个汉字');
+        return;
+      }
+      if (!phoneRegex.test(phone)) {
+        alert('请输入有效的手机号码');
+        return;
+      }
+      if (!idCardRegex.test(idCard)) {
+        alert('请输入有效的身份证号码');
+        return;
+      }
+      if (!bankCardRegex.test(bankCard)) {
+        alert('请输入有效的银行卡号');
+        return;
+      }
+
+      alert('贷款成功！所需金额将在 24 小时之内到账！');
+      document.getElementById('loanForm').reset();
+    }
+  </script>
+</body>
+
+</html>
