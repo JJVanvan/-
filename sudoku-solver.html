@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>数独求解器</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#165DFF',
+            secondary: '#69b1ff',
+            accent: '#FF7D00',
+            success: '#00B42A',
+            danger: '#F53F3F',
+            neutral: {
+              100: '#F2F3F5',
+              200: '#E5E6EB',
+              300: '#C9CDD4',
+              400: '#86909C',
+              500: '#4E5969',
+              600: '#272E3B',
+              700: '#1D2129',
+            }
+          },
+          fontFamily: {
+            inter: ['Inter', 'system-ui', 'sans-serif'],
+          },
+        },
+      }
+    }
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .content-auto {
+        content-visibility: auto;
+      }
+      .sudoku-grid-border {
+        @apply border-2 border-neutral-300;
+      }
+      .sudoku-cell {
+        @apply w-10 h-10 sm:w-[clamp(2.5rem,8vw,3.5rem)] sm:h-[clamp(2.5rem,8vw,3.5rem)] flex items-center justify-center text-xl font-medium transition-all duration-200;
+      }
+      .sudoku-cell-input {
+        @apply w-full h-full text-center outline-none border border-neutral-200 rounded-sm text-[clamp(1rem,3vw,1.25rem)];
+      }
+      .sudoku-cell-input:focus {
+        @apply border-primary ring-1 ring-primary;
+      }
+      .sudoku-cell-error {
+        @apply bg-danger/10 border-danger;
+      }
+      .sudoku-cell-fixed {
+        @apply bg-neutral-100 text-neutral-700 cursor-not-allowed;
+      }
+      .btn {
+        @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2;
+      }
+      .btn-primary {
+        @apply bg-primary text-white hover:bg-primary/90 active:bg-primary/80;
+      }
+      .btn-secondary {
+        @apply bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-50 active:bg-neutral-100;
+      }
+      .btn-accent {
+        @apply bg-accent text-white hover:bg-accent/90 active:bg-accent/80;
+      }
+      .toast {
+        @apply fixed top-4 right-4 px-4 py-3 rounded-lg shadow-lg transform transition-all duration-300 opacity-0 translate-y-[-20px] z-50;
+      }
+      .toast.show {
+        @apply opacity-100 translate-y-0;
+      }
+      .toast-success {
+        @apply bg-success text-white;
+      }
+      .toast-error {
+        @apply bg-danger text-white;
+      }
+    }
+  </style>
+</head>
+
+<body
+  class="font-inter bg-gradient-to-br from-neutral-50 to-neutral-100 min-h-screen flex flex-col items-center justify-center p-4">
+  <div class="max-w-3xl w-full bg-white rounded-2xl shadow-xl p-6 md:p-8">
+    <header class="text-center mb-6">
+      <h1 class="text-[clamp(1.5rem,5vw,2.25rem)] font-bold text-neutral-700 mb-2">数独求解器</h1>
+      <p class="text-neutral-500 text-sm sm:text-base">使用简单，快速求解的数独工具</p>
+    </header>
+
+    <main class="flex flex-col items-center">
+      <!-- 数独网格 -->
+      <div class="relative mb-6 w-full">
+        <div id="sudoku-grid"
+          class="grid grid-cols-9 grid-rows-9 sudoku-grid-border rounded-lg overflow-hidden w-full aspect-square max-w-md mx-auto">
+          <!-- 数独单元格将通过JS动态生成 -->
+        </div>
+
+        <!-- 加载指示器 -->
+        <div id="loading"
+          class="absolute inset-0 bg-white/80 flex items-center justify-center opacity-0 pointer-events-none transition-opacity duration-300">
+          <div class="flex flex-col items-center">
+            <div class="w-12 h-12 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-2"></div>
+            <p class="text-primary font-medium">正在求解...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 控制按钮 -->
+      <div class="flex flex-wrap justify-center gap-2 mb-6 w-full">
+        <button id="solve-btn" class="btn btn-primary flex-1 min-w-[100px]">
+          <i class="fa fa-magic"></i> 求解
+        </button>
+        <button id="clear-btn" class="btn btn-secondary flex-1 min-w-[100px]">
+          <i class="fa fa-eraser"></i> 清空
+        </button>
+        <button id="generate-btn" class="btn btn-accent flex-1 min-w-[100px]">
+          <i class="fa fa-random"></i> 生成
+        </button>
+        <button id="check-btn" class="btn btn-secondary flex-1 min-w-[100px]">
+          <i class="fa fa-check"></i> 检查
+        </button>
+
+        <!-- 难度选择器 -->
+        <div class="relative w-full sm:w-auto mt-2 sm:mt-0 flex-1 min-w-[100px]">
+          <select id="difficulty" class="btn btn-secondary appearance-none pr-8 w-full">
+            <option value="easy">简单</option>
+            <option value="medium" selected>中等</option>
+            <option value="hard">困难</option>
+            <option value="expert">专家</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-neutral-400">
+            <i class="fa fa-chevron-down text-xs"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- 提示信息 -->
+      <div id="message"
+        class="text-center py-2 px-4 rounded-lg w-full transition-all duration-300 h-0 opacity-0 overflow-hidden">
+        <p id="message-text"></p>
+      </div>
+    </main>
+
+    <footer class="mt-6 text-center text-neutral-400 text-xs sm:text-sm">
+      <p>数独求解器 &copy; 2025</p>
+    </footer>
+  </div>
+
+  <!-- 消息提示框 -->
+  <div id="toast" class="toast">
+    <p id="toast-text"></p>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 数独网格和UI元素
+      const sudokuGrid = document.getElementById('sudoku-grid');
+      const solveBtn = document.getElementById('solve-btn');
+      const clearBtn = document.getElementById('clear-btn');
+      const generateBtn = document.getElementById('generate-btn');
+      const checkBtn = document.getElementById('check-btn');
+      const difficultySelect = document.getElementById('difficulty');
+      const message = document.getElementById('message');
+      const messageText = document.getElementById('message-text');
+      const loading = document.getElementById('loading');
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toast-text');
+
+      // 初始化数独网格
+      function initializeGrid() {
+        sudokuGrid.innerHTML = '';
+
+        for (let i = 0; i < 81; i++) {
+          const cell = document.createElement('div');
+          const row = Math.floor(i / 9);
+          const col = i % 9;
+
+          // 计算单元格的边框样式
+          let borderClasses = 'border border-neutral-200';
+          if (row === 2 || row === 5) borderClasses += ' border-b-2 border-neutral-300';
+          if (col === 2 || col === 5) borderClasses += ' border-r-2 border-neutral-300';
+
+          cell.className = `sudoku-cell ${borderClasses}`;
+
+          // 创建输入框
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.min = 1;
+          input.max = 9;
+          input.className = 'sudoku-cell-input';
+          input.dataset.row = row;
+          input.dataset.col = col;
+          input.dataset.generated = 'false'; // 标记是否为生成的数字
+
+          // 输入框事件处理
+          input.addEventListener('input', (e) => {
+            // 限制只能输入1-9的数字
+            let value = e.target.value;
+            if (value === '') return;
+
+            value = parseInt(value, 10);
+            if (isNaN(value) || value < 1 || value > 9) {
+              e.target.value = '';
+              showToast('请输入1-9的数字', 'error');
+            } else {
+              e.target.value = value.toString();
+              e.target.dataset.generated = 'false'; // 用户输入的不是生成的数字
+            }
+          });
+
+          input.addEventListener('keydown', (e) => {
+            // 阻止非数字键输入
+            const allowedKeys = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Tab'];
+            if (!allowedKeys.includes(e.key) && (isNaN(parseInt(e.key, 10)) || parseInt(e.key, 10) === 0)) {
+              e.preventDefault();
+            }
+
+            // 方向键导航
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+              e.preventDefault();
+              const currentRow = parseInt(e.target.dataset.row, 10);
+              const currentCol = parseInt(e.target.dataset.col, 10);
+
+              let newRow = currentRow;
+              let newCol = currentCol;
+
+              if (e.key === 'ArrowLeft') newCol--;
+              if (e.key === 'ArrowRight') newCol++;
+              if (e.key === 'ArrowUp') newRow--;
+              if (e.key === 'ArrowDown') newRow++;
+
+              if (newRow >= 0 && newRow < 9 && newCol >= 0 && newCol < 9) {
+                const nextCell = sudokuGrid.querySelector(`input[data-row="${newRow}"][data-col="${newCol}"]`);
+                nextCell.focus();
+              }
+            }
+          });
+
+          cell.appendChild(input);
+          sudokuGrid.appendChild(cell);
+        }
+      }
+
+      // 获取数独网格数据
+      function getSudokuData() {
+        const data = Array(9).fill().map(() => Array(9).fill(0));
+        const inputs = sudokuGrid.querySelectorAll('input');
+
+        inputs.forEach(input => {
+          const row = parseInt(input.dataset.row, 10);
+          const col = parseInt(input.dataset.col, 10);
+          const value = input.value.trim();
+
+          if (value !== '') {
+            data[row][col] = parseInt(value, 10);
+          }
+        });
+
+        return data;
+      }
+
+      // 设置数独网格数据
+      function setSudokuData(data, isGenerated = false) {
+        const inputs = sudokuGrid.querySelectorAll('input');
+
+        inputs.forEach(input => {
+          const row = parseInt(input.dataset.row, 10);
+          const col = parseInt(input.dataset.col, 10);
+          const value = data[row][col];
+
+          // 确保只更新有值的单元格
+          if (value !== 0) {
+            input.value = value.toString();
+          } else {
+            input.value = '';
+          }
+
+          // 如果是生成的数独，设置固定单元格样式
+          if (isGenerated && value !== 0) {
+            input.classList.add('sudoku-cell-fixed');
+            input.dataset.generated = 'true'; // 标记为生成的数字
+          } else if (input.dataset.generated === 'true') {
+            // 保持已生成数字的样式
+            input.classList.add('sudoku-cell-fixed');
+          } else {
+            input.classList.remove('sudoku-cell-fixed');
+          }
+
+          // 移除错误样式
+          input.classList.remove('sudoku-cell-error');
+        });
+      }
+
+      // 显示消息
+      function showMessage(text, type = 'info') {
+        messageText.textContent = text;
+
+        if (type === 'success') {
+          message.className = 'text-center py-2 px-4 rounded-lg bg-success/10 text-success w-full transition-all duration-300';
+        } else if (type === 'error') {
+          message.className = 'text-center py-2 px-4 rounded-lg bg-danger/10 text-danger w-full transition-all duration-300';
+        } else {
+          message.className = 'text-center py-2 px-4 rounded-lg bg-primary/10 text-primary w-full transition-all duration-300';
+        }
+
+        // 显示消息
+        message.style.height = 'auto';
+        message.style.opacity = '1';
+
+        // 3秒后隐藏消息
+        setTimeout(() => {
+          message.style.height = '0';
+          message.style.opacity = '0';
+        }, 3000);
+      }
+
+      // 显示提示框
+      function showToast(text, type = 'info') {
+        toastText.textContent = text;
+
+        if (type === 'success') {
+          toast.className = 'toast toast-success';
+        } else if (type === 'error') {
+          toast.className = 'toast toast-error';
+        } else {
+          toast.className = 'toast bg-primary text-white';
+        }
+
+        // 显示提示框
+        toast.classList.add('show');
+
+        // 3秒后隐藏提示框
+        setTimeout(() => {
+          toast.classList.remove('show');
+        }, 3000);
+      }
+
+      // 检查数独是否有效
+      function isValidSudoku(data) {
+        // 检查行
+        for (let i = 0; i < 9; i++) {
+          const row = new Set();
+          for (let j = 0; j < 9; j++) {
+            if (data[i][j] !== 0) {
+              if (row.has(data[i][j])) {
+                return false;
+              }
+              row.add(data[i][j]);
+            }
+          }
+        }
+
+        // 检查列
+        for (let j = 0; j < 9; j++) {
+          const col = new Set();
+          for (let i = 0; i < 9; i++) {
+            if (data[i][j] !== 0) {
+              if (col.has(data[i][j])) {
+                return false;
+              }
+              col.add(data[i][j]);
+            }
+          }
+        }
+
+        // 检查3x3小方块
+        for (let blockRow = 0; blockRow < 3; blockRow++) {
+          for (let blockCol = 0; blockCol < 3; blockCol++) {
+            const block = new Set();
+            for (let i = 0; i < 3; i++) {
+              for (let j = 0; j < 3; j++) {
+                const row = blockRow * 3 + i;
+                const col = blockCol * 3 + j;
+                if (data[row][col] !== 0) {
+                  if (block.has(data[row][col])) {
+                    return false;
+                  }
+                  block.add(data[row][col]);
+                }
+              }
+            }
+          }
+        }
+
+        return true;
+      }
+
+      // 求解数独并返回求解难度
+      function solveSudokuWithDifficulty(board) {
+        const copy = JSON.parse(JSON.stringify(board));
+        let difficulty = 0; // 初始难度
+
+        function backtrack() {
+          const emptyCell = findEmptyCell(copy);
+          if (!emptyCell) return true;
+
+          const { row, col } = emptyCell;
+          let candidates = [];
+
+          // 找出所有可能的候选数字
+          for (let num = 1; num <= 9; num++) {
+            if (isValidMove(copy, row, col, num)) {
+              candidates.push(num);
+            }
+          }
+
+          // 候选数字越少，难度越高
+          difficulty = Math.max(difficulty, 9 - candidates.length);
+
+          // 尝试所有候选数字
+          for (let num of candidates) {
+            copy[row][col] = num;
+
+            if (backtrack()) {
+              return true;
+            }
+
+            copy[row][col] = 0;
+          }
+
+          return false;
+        }
+
+        const solvable = backtrack();
+        return { solvable, difficulty };
+      }
+
+      // 查找空格
+      function findEmptyCell(board) {
+        for (let i = 0; i < 9; i++) {
+          for (let j = 0; j < 9; j++) {
+            if (board[i][j] === 0) {
+              return { row: i, col: j };
+            }
+          }
+        }
+        return null;
+      }
+
+      // 检查数字是否可以放在指定位置
+      function isValidMove(board, row, col, num) {
+        // 检查行
+        for (let j = 0; j < 9; j++) {
+          if (board[row][j] === num) {
+            return false;
+          }
+        }
+
+        // 检查列
+        for (let i = 0; i < 9; i++) {
+          if (board[i][col] === num) {
+            return false;
+          }
+        }
+
+        // 检查3x3小方块
+        const startRow = Math.floor(row / 3) * 3;
+        const startCol = Math.floor(col / 3) * 3;
+
+        for (let i = 0; i < 3; i++) {
+          for (let j = 0; j < 3; j++) {
+            if (board[startRow + i][startCol + j] === num) {
+              return false;
+            }
+          }
+        }
+
+        return true;
+      }
+
+      // 生成数独
+      function generateSudoku(difficulty = 'medium') {
+        // 根据难度级别设置不同的参数
+        const difficultySettings = {
+          easy: {
+            cellsToRemove: 30,
+            minDifficulty: 2,
+            maxBacktracks: 100
+          },
+          medium: {
+            cellsToRemove: 40,
+            minDifficulty: 3,
+            maxBacktracks: 500
+          },
+          hard: {
+            cellsToRemove: 50,
+            minDifficulty: 5,
+            maxBacktracks: 1000
+          },
+          expert: {
+            cellsToRemove: 55,
+            minDifficulty: 7,
+            maxBacktracks: 2000
+          }
+        };
+
+        const settings = difficultySettings[difficulty];
+
+        // 创建一个已解决的数独
+        const board = Array(9).fill().map(() => Array(9).fill(0));
+
+        // 使用更复杂的方法生成数独
+        function generateFullBoard() {
+          function backtrack() {
+            const emptyCell = findEmptyCell(board);
+            if (!emptyCell) return true;
+
+            const { row, col } = emptyCell;
+            const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+            // 随机打乱数字顺序
+            for (let i = nums.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [nums[i], nums[j]] = [nums[j], nums[i]];
+            }
+
+            for (let num of nums) {
+              if (isValidMove(board, row, col, num)) {
+                board[row][col] = num;
+
+                if (backtrack()) {
+                  return true;
+                }
+
+                board[row][col] = 0;
+              }
+            }
+
+            return false;
+          }
+
+          return backtrack();
+        }
+
+        // 生成完整的数独解
+        generateFullBoard();
+
+        // 创建数独副本用于挖空
+        const puzzle = JSON.parse(JSON.stringify(board));
+
+        // 记录挖空位置
+        const positions = [];
+        for (let i = 0; i < 81; i++) {
+          positions.push({ row: Math.floor(i / 9), col: i % 9 });
+        }
+
+        // 随机打乱位置
+        for (let i = positions.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [positions[i], positions[j]] = [positions[j], positions[i]];
+        }
+
+        // 挖空单元格并确保唯一解
+        let cellsRemoved = 0;
+        let backtracks = 0;
+
+        for (let { row, col } of positions) {
+          if (cellsRemoved >= settings.cellsToRemove) break;
+
+          const originalValue = puzzle[row][col];
+          puzzle[row][col] = 0;
+
+          // 检查是否有唯一解
+          const solutionCount = countSolutions(puzzle);
+          backtracks += solutionCount.backtracks;
+
+          if (solutionCount.count === 1 && backtracks <= settings.maxBacktracks) {
+            cellsRemoved++;
+          } else {
+            // 如果不是唯一解，恢复该单元格
+            puzzle[row][col] = originalValue;
+          }
+        }
+
+        // 评估数独难度
+        const result = solveSudokuWithDifficulty(puzzle);
+
+        // 如果难度不符合要求，尝试调整
+        if (result.difficulty < settings.minDifficulty) {
+          // 可以选择递归生成或返回当前结果
+          console.log(`生成的数独难度为${result.difficulty}，低于目标${settings.minDifficulty}`);
+        }
+
+        return puzzle;
+      }
+
+      // 计算数独的解的数量
+      function countSolutions(board) {
+        const copy = JSON.parse(JSON.stringify(board));
+        let count = 0;
+        let backtracks = 0;
+
+        function backtrack() {
+          backtracks++;
+          const emptyCell = findEmptyCell(copy);
+          if (!emptyCell) {
+            count++;
+            return;
+          }
+
+          const { row, col } = emptyCell;
+
+          for (let num = 1; num <= 9 && count < 2; num++) {
+            if (isValidMove(copy, row, col, num)) {
+              copy[row][col] = num;
+              backtrack();
+              copy[row][col] = 0;
+            }
+          }
+        }
+
+        backtrack();
+        return { count, backtracks };
+      }
+
+      // 求解数独
+      function solveSudoku(board) {
+        // 创建数独副本
+        const copy = JSON.parse(JSON.stringify(board));
+
+        // 回溯求解函数
+        function backtrack() {
+          // 找到第一个空格
+          const emptyCell = findEmptyCell(copy);
+          if (!emptyCell) return true; // 没有空格，求解完成
+
+          const { row, col } = emptyCell;
+
+          // 尝试填充1-9的数字
+          for (let num = 1; num <= 9; num++) {
+            if (isValidMove(copy, row, col, num)) {
+              // 填入数字
+              copy[row][col] = num;
+
+              // 递归求解
+              if (backtrack()) {
+                return true;
+              }
+
+              // 回溯
+              copy[row][col] = 0;
+            }
+          }
+
+          return false; // 无解
+        }
+
+        // 开始求解
+        const solved = backtrack();
+        return solved ? copy : null;
+      }
+
+      // 检查用户解答
+      function checkSolution() {
+        const data = getSudokuData();
+
+        // 检查是否所有单元格都已填写
+        for (let i = 0; i < 9; i++) {
+          for (let j = 0; j < 9; j++) {
+            if (data[i][j] === 0) {
+              showMessage('数独未完成，请继续填写', 'error');
+              return;
+            }
+          }
+        }
+
+        // 检查数独是否有效
+        if (isValidSudoku(data)) {
+          // 创建一个副本并尝试求解
+          const copy = JSON.parse(JSON.stringify(data));
+          if (solveSudoku(copy)) {
+            showMessage('恭喜，解答正确！', 'success');
+          } else {
+            showMessage('解答错误，请检查', 'error');
+          }
+        } else {
+          showMessage('解答错误，请检查', 'error');
+
+          // 高亮显示错误的单元格
+          highlightErrors(data);
+        }
+      }
+
+      // 高亮显示错误的单元格
+      function highlightErrors(data) {
+        // 重置所有单元格样式
+        const inputs = sudokuGrid.querySelectorAll('input');
+        inputs.forEach(input => {
+          input.classList.remove('sudoku-cell-error');
+        });
+
+        // 检查行错误
+        for (let i = 0; i < 9; i++) {
+          const rowValues = new Map();
+          for (let j = 0; j < 9; j++) {
+            const value = data[i][j];
+            if (value !== 0) {
+              if (rowValues.has(value)) {
+                const inputs = sudokuGrid.querySelectorAll(`input[data-row="${i}"]`);
+                inputs[j].classList.add('sudoku-cell-error');
+                inputs[rowValues.get(value)].classList.add('sudoku-cell-error');
+              } else {
+                rowValues.set(value, j);
+              }
+            }
+          }
+        }
+
+        // 检查列错误
+        for (let j = 0; j < 9; j++) {
+          const colValues = new Map();
+          for (let i = 0; i < 9; i++) {
+            const value = data[i][j];
+            if (value !== 0) {
+              if (colValues.has(value)) {
+                const inputs = sudokuGrid.querySelectorAll(`input[data-col="${j}"]`);
+                inputs[i].classList.add('sudoku-cell-error');
+                inputs[colValues.get(value)].classList.add('sudoku-cell-error');
+              } else {
+                colValues.set(value, i);
+              }
+            }
+          }
+        }
+
+        // 检查3x3方块错误
+        for (let blockRow = 0; blockRow < 3; blockRow++) {
+          for (let blockCol = 0; blockCol < 3; blockCol++) {
+            const blockValues = new Map();
+            for (let i = 0; i < 3; i++) {
+              for (let j = 0; j < 3; j++) {
+                const row = blockRow * 3 + i;
+                const col = blockCol * 3 + j;
+                const value = data[row][col];
+                if (value !== 0) {
+                  if (blockValues.has(value)) {
+                    const inputs = sudokuGrid.querySelectorAll('input');
+                    inputs[row * 9 + col].classList.add('sudoku-cell-error');
+                    inputs[blockValues.get(value)].classList.add('sudoku-cell-error');
+                  } else {
+                    blockValues.set(value, row * 9 + col);
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // 事件监听器
+      solveBtn.addEventListener('click', () => {
+        const data = getSudokuData();
+
+        // 检查输入是否有效
+        if (!isValidSudoku(data)) {
+          showMessage('输入无效，请检查重复数字', 'error');
+          highlightErrors(data);
+          return;
+        }
+
+        // 显示加载动画
+        loading.style.opacity = '1';
+        loading.style.pointerEvents = 'auto';
+
+        // 使用setTimeout模拟异步求解，防止UI阻塞
+        setTimeout(() => {
+          try {
+            const solution = solveSudoku(data);
+
+            if (solution) {
+              setSudokuData(solution);
+              showMessage('求解成功！', 'success');
+            } else {
+              showMessage('无解，请检查输入', 'error');
+              // 高亮显示已填写的单元格
+              const inputs = sudokuGrid.querySelectorAll('input');
+              inputs.forEach(input => {
+                if (input.value !== '') {
+                  input.classList.add('sudoku-cell-error');
+                }
+              });
+            }
+          } catch (error) {
+            console.error('求解过程中出错:', error);
+            showMessage('求解过程中发生错误', 'error');
+          } finally {
+            // 隐藏加载动画，无论求解成功或失败
+            loading.style.opacity = '0';
+            loading.style.pointerEvents = 'none';
+          }
+        }, 300);
+      });
+
+      clearBtn.addEventListener('click', () => {
+        // 重置所有单元格
+        const inputs = sudokuGrid.querySelectorAll('input');
+        inputs.forEach(input => {
+          input.value = '';
+          input.classList.remove('sudoku-cell-error', 'sudoku-cell-fixed');
+          input.dataset.generated = 'false';
+        });
+
+        showMessage('已清空所有单元格', 'info');
+      });
+
+      generateBtn.addEventListener('click', () => {
+        const difficulty = difficultySelect.value;
+
+        // 显示加载动画
+        loading.style.opacity = '1';
+        loading.style.pointerEvents = 'auto';
+
+        // 使用setTimeout模拟异步生成，防止UI阻塞
+        setTimeout(() => {
+          try {
+            const newSudoku = generateSudoku(difficulty);
+
+            // 清空当前网格
+            const inputs = sudokuGrid.querySelectorAll('input');
+            inputs.forEach(input => {
+              input.value = '';
+              input.classList.remove('sudoku-cell-error', 'sudoku-cell-fixed');
+              input.dataset.generated = 'false';
+            });
+
+            // 设置新的数独
+            setSudokuData(newSudoku, true);
+
+            // 根据难度显示不同的消息
+            let difficultyText = '';
+            if (difficulty === 'easy') difficultyText = '简单难度';
+            else if (difficulty === 'medium') difficultyText = '中等难度';
+            else if (difficulty === 'hard') difficultyText = '困难难度';
+            else if (difficulty === 'expert') difficultyText = '专家难度';
+
+            showMessage(`新的${difficultyText}数独已生成！`, 'success');
+          } catch (error) {
+            console.error('生成数独过程中出错:', error);
+            showMessage('生成数独时发生错误', 'error');
+          } finally {
+            // 隐藏加载动画
+            loading.style.opacity = '0';
+            loading.style.pointerEvents = 'none';
+          }
+        }, 300);
+      });
+
+      checkBtn.addEventListener('click', checkSolution);
+
+      // 初始化网格
+      initializeGrid();
+
+      // 生成一个初始数独
+      setTimeout(() => {
+        generateBtn.click();
+      }, 100);
+
+      // 处理窗口大小变化，调整数独网格
+      window.addEventListener('resize', () => {
+        // 重新调整字体大小和单元格尺寸
+        const inputs = sudokuGrid.querySelectorAll('input');
+        inputs.forEach(input => {
+          // 确保数字在小屏幕上也能清晰显示
+          const cellSize = input.offsetWidth;
+          input.style.fontSize = `${Math.max(12, cellSize * 0.5)}px`;
+        });
+      });
+    });
+  </script>
+</body>
+
+</html>
